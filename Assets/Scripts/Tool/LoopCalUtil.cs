@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public static class LoopCalUtil
 {
-    public static void GetChildSizes(RectTransform cellTrans,int axis, bool controlSize, bool childForceExpand,
+    public static void GetChildSizes(RectTransform cellTrans, int axis, bool controlSize, bool childForceExpand,
         out float min, out float preferred, out float flexible)
     {
         if (!controlSize)
@@ -25,15 +25,16 @@ public static class LoopCalUtil
             flexible = Mathf.Max(flexible, 1);
     }
 
-    public static void RefreshViewAndRebuild(int axis,GameObject go,BaseLoopModel model)
+    public static void RefreshViewAndRebuild(int axis, GameObject go, LoopCell cell)
     {
         if (axis == 1)
         {
             var rectTrans = go.transform as RectTransform;
-            rectTrans.sizeDelta =  model.Sizes;
+            //rectTrans.sizeDelta = cell.Sizes;
+            rectTrans.sizeDelta = cell.GetRect().size;
         }
-        var baseCell = go.GetComponent<BaseCell>();
-        baseCell.BuildData(model);
+
+        cell.RefreshCell(go);
         var rect = go.transform as RectTransform;
         LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
     }

@@ -6,7 +6,7 @@ using UnityEngine;
 public interface ILoopLayout
 {
     LoopObjectPool ObjectPool { set; }
-    List<BaseLoopModel> LoopModels { set; }
+    LoopScrollSource Source { set; }
     void AddCalculateCompleteEvent(Action action);
-    void SetChildAlongAxis(RectTransform child, BaseLoopModel model, int axis);
+    void SetChildAlongAxis(RectTransform child, LoopCell cell, int axis);
 }

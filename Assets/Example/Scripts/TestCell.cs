@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class TestCell : BaseCell
+public class TestCell : MonoBehaviour
 {
     private Text _testTxt;
+
     private void Awake()
     {
         BuildUI();
@@ -17,9 +18,8 @@ public class TestCell : BaseCell
         _testTxt = transform.Find("Text").GetComponent<Text>();
     }
 
-    public override void BuildData(BaseLoopModel model)
+    public void BuildData(TestModel testModel)
     {
-        var testModel = model as TestModel;
         _testTxt.text = testModel.content;
     }
 }

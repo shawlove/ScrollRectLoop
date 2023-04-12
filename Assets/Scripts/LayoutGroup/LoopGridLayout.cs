@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class LoopGridLayout : LayoutGroup,ILoopLayout
+public class LoopGridLayout : LayoutGroup, ILoopLayout
 {
     /// <summary>
     /// Which corner is the starting corner for the grid.
@@ -72,7 +70,8 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         FixedRowCount = 2
     }
 
-    [SerializeField] protected Corner m_StartCorner = Corner.UpperLeft;
+    [SerializeField]
+    protected Corner m_StartCorner = Corner.UpperLeft;
 
     /// <summary>
     /// Which corner should the first cell be placed in?
@@ -83,7 +82,8 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         set { SetProperty(ref m_StartCorner, value); }
     }
 
-    [SerializeField] protected Axis m_StartAxis = Axis.Horizontal;
+    [SerializeField]
+    protected Axis m_StartAxis = Axis.Horizontal;
 
     /// <summary>
     /// Which axis should cells be placed along first
@@ -97,7 +97,8 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         set { SetProperty(ref m_StartAxis, value); }
     }
 
-    [SerializeField] protected Vector2 m_CellSize = new Vector2(100, 100);
+    [SerializeField]
+    protected Vector2 m_CellSize = new Vector2(100, 100);
 
     /// <summary>
     /// The size to use for each cell in the grid.
@@ -108,7 +109,8 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         set { SetProperty(ref m_CellSize, value); }
     }
 
-    [SerializeField] protected Vector2 m_Spacing = Vector2.zero;
+    [SerializeField]
+    protected Vector2 m_Spacing = Vector2.zero;
 
     /// <summary>
     /// The spacing to use between layout elements in the grid on both axises.
@@ -119,7 +121,8 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         set { SetProperty(ref m_Spacing, value); }
     }
 
-    [SerializeField] protected Constraint m_Constraint = Constraint.Flexible;
+    [SerializeField]
+    protected Constraint m_Constraint = Constraint.Flexible;
 
     /// <summary>
     /// Which constraint to use for the GridLayoutGroup.
@@ -133,7 +136,8 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         set { SetProperty(ref m_Constraint, value); }
     }
 
-    [SerializeField] protected int m_ConstraintCount = 2;
+    [SerializeField]
+    protected int m_ConstraintCount = 2;
 
     /// <summary>
     /// How many cells there should be along the constrained axis.
@@ -156,22 +160,24 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
     }
 
 #endif
-    private List<BaseLoopModel> _loopModels;
 
-    public List<BaseLoopModel> LoopModels
+    private LoopScrollSource _source;
+
+    public LoopScrollSource Source
     {
-        get => _loopModels;
+        get => _source;
         set
         {
-            _loopModels = value;
+            _source = value;
             SetDirty();
         }
     }
-    
+
     public LoopObjectPool ObjectPool { get; set; }
 
-    
+
     private Action _onLayoutCalculateCompleteEvent;
+
     public void AddCalculateCompleteEvent(Action action)
     {
         _onLayoutCalculateCompleteEvent = action;
@@ -192,15 +198,26 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         _onLayoutCalculateCompleteEvent?.Invoke();
     }
 
-    protected override void OnTransformChildrenChanged() {}
+    protected override void OnTransformChildrenChanged()
+    {
+    }
 
-    protected override void OnDidApplyAnimationProperties() { }
+    protected override void OnDidApplyAnimationProperties()
+    {
+    }
 
-    protected override void OnRectTransformDimensionsChange() { }
+    protected override void OnRectTransformDimensionsChange()
+    {
+        
+    }
 
-    protected override void OnEnable() { }
+    protected override void OnEnable()
+    {
+    }
 
-    protected override void OnDisable() { }
+    protected override void OnDisable()
+    {
+    }
 
     /// <summary>
     /// Called by the layout system to calculate the horizontal layout size.
@@ -208,7 +225,7 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
     /// </summary>
     public override void CalculateLayoutInputHorizontal()
     {
-        if (ObjectPool == null || _loopModels == null)
+        if (ObjectPool == null || _source == null)
         {
             return;
         }
@@ -223,12 +240,12 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         }
         else if (m_Constraint == Constraint.FixedRowCount)
         {
-            minColumns = preferredColumns = Mathf.CeilToInt(LoopModels.Count / (float) m_ConstraintCount - 0.001f);
+            minColumns = preferredColumns = Mathf.CeilToInt(_source.Count / (float)m_ConstraintCount - 0.001f);
         }
         else
         {
             minColumns = 1;
-            preferredColumns = Mathf.CeilToInt(Mathf.Sqrt(LoopModels.Count));
+            preferredColumns = Mathf.CeilToInt(Mathf.Sqrt(_source.Count));
         }
 
         SetLayoutInputForAxis(
@@ -243,7 +260,7 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
     /// </summary>
     public override void CalculateLayoutInputVertical()
     {
-        if (ObjectPool == null || _loopModels == null)
+        if (ObjectPool == null || _source == null)
         {
             return;
         }
@@ -251,7 +268,7 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         int minRows = 0;
         if (m_Constraint == Constraint.FixedColumnCount)
         {
-            minRows = Mathf.CeilToInt(LoopModels.Count / (float) m_ConstraintCount - 0.001f);
+            minRows = Mathf.CeilToInt(_source.Count / (float)m_ConstraintCount - 0.001f);
         }
         else if (m_Constraint == Constraint.FixedRowCount)
         {
@@ -262,7 +279,7 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
             float width = rectTransform.rect.width;
             int cellCountX = Mathf.Max(1,
                 Mathf.FloorToInt((width - padding.horizontal + spacing.x + 0.001f) / (cellSize.x + spacing.x)));
-            minRows = Mathf.CeilToInt(LoopModels.Count / (float) cellCountX);
+            minRows = Mathf.CeilToInt(_source.Count / (float)cellCountX);
         }
 
         float minSpace = padding.vertical + (cellSize.y + spacing.y) * minRows - spacing.y;
@@ -281,7 +298,7 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
 
     private void SetCellsAlongAxis(int axis)
     {
-        if (ObjectPool == null || _loopModels == null)
+        if (ObjectPool == null || _source == null)
         {
             return;
         }
@@ -296,11 +313,12 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
                     DrivenTransformProperties.Anchors |
                     DrivenTransformProperties.AnchoredPosition |
                     DrivenTransformProperties.SizeDelta);
-
+        
                 rect.anchorMin = Vector2.up;
                 rect.anchorMax = Vector2.up;
                 rect.sizeDelta = cellSize;
             }
+        
             return;
         }
 
@@ -313,15 +331,15 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
         {
             cellCountX = m_ConstraintCount;
 
-            if (LoopModels.Count > cellCountX)
-                cellCountY = LoopModels.Count / cellCountX + (LoopModels.Count % cellCountX > 0 ? 1 : 0);
+            if (_source.Count > cellCountX)
+                cellCountY = _source.Count / cellCountX + (_source.Count % cellCountX > 0 ? 1 : 0);
         }
         else if (m_Constraint == Constraint.FixedRowCount)
         {
             cellCountY = m_ConstraintCount;
 
-            if (LoopModels.Count > cellCountY)
-                cellCountX = LoopModels.Count / cellCountY + (LoopModels.Count % cellCountY > 0 ? 1 : 0);
+            if (_source.Count > cellCountY)
+                cellCountX = _source.Count / cellCountY + (_source.Count % cellCountY > 0 ? 1 : 0);
         }
         else
         {
@@ -338,23 +356,23 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
                     Mathf.FloorToInt((height - padding.vertical + spacing.y + 0.001f) / (cellSize.y + spacing.y)));
         }
 
-        int cornerX = (int) startCorner % 2;
-        int cornerY = (int) startCorner / 2;
+        int cornerX = (int)startCorner % 2;
+        int cornerY = (int)startCorner / 2;
 
         int cellsPerMainAxis, actualCellCountX, actualCellCountY;
         if (startAxis == Axis.Horizontal)
         {
             cellsPerMainAxis = cellCountX;
-            actualCellCountX = Mathf.Clamp(cellCountX, 1, LoopModels.Count);
+            actualCellCountX = Mathf.Clamp(cellCountX, 1, _source.Count);
             actualCellCountY =
-                Mathf.Clamp(cellCountY, 1, Mathf.CeilToInt(LoopModels.Count / (float) cellsPerMainAxis));
+                Mathf.Clamp(cellCountY, 1, Mathf.CeilToInt(_source.Count / (float)cellsPerMainAxis));
         }
         else
         {
             cellsPerMainAxis = cellCountY;
-            actualCellCountY = Mathf.Clamp(cellCountY, 1, LoopModels.Count);
+            actualCellCountY = Mathf.Clamp(cellCountY, 1, _source.Count);
             actualCellCountX =
-                Mathf.Clamp(cellCountX, 1, Mathf.CeilToInt(LoopModels.Count / (float) cellsPerMainAxis));
+                Mathf.Clamp(cellCountX, 1, Mathf.CeilToInt(_source.Count / (float)cellsPerMainAxis));
         }
 
         Vector2 requiredSpace = new Vector2(
@@ -366,7 +384,7 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
             GetStartOffset(1, requiredSpace.y)
         );
 
-        for (int i = 0; i < LoopModels.Count; i++)
+        for (int i = 0; i < _source.Count; i++)
         {
             int positionX;
             int positionY;
@@ -385,23 +403,23 @@ public class LoopGridLayout : LayoutGroup,ILoopLayout
                 positionX = actualCellCountX - 1 - positionX;
             if (cornerY == 1)
                 positionY = actualCellCountY - 1 - positionY;
-
-            var go = ObjectPool.GetObject(_loopModels[i].CellType);
+            
+            var go = ObjectPool.GetObject(_source[i].GetTmpl());
             var child = go.transform as RectTransform;
 
             SetChildAlongAxis(child, 0, startOffset.x + (cellSize[0] + spacing[0]) * positionX, cellSize[0]);
 //            _loopModels[i].RefreshCellRect(child, 0);
-            _loopModels[i].RefreshCellSizeData(0, startOffset.x + (cellSize[0] + spacing[0]) * positionX, cellSize[0]);
+            _source[i].RefreshCellSizeData(0, startOffset.x + (cellSize[0] + spacing[0]) * positionX, cellSize[0]);
             SetChildAlongAxis(child, 1, startOffset.y + (cellSize[1] + spacing[1]) * positionY, cellSize[1]);
 //            _loopModels[i].RefreshCellRect(child, 1);
-            _loopModels[i].RefreshCellSizeData(1, startOffset.y + (cellSize[1] + spacing[1]) * positionY, cellSize[1]);
-            
+            _source[i].RefreshCellSizeData(1, startOffset.y + (cellSize[1] + spacing[1]) * positionY, cellSize[1]);
+
             ObjectPool.ReturnObject(go);
         }
     }
-    
-    public void SetChildAlongAxis(RectTransform child,BaseLoopModel model,int axis)
+
+    public void SetChildAlongAxis(RectTransform child, LoopCell cell, int axis)
     {
-        SetChildAlongAxis(child, axis, model.GetOffset(axis),model.GetSize(axis));
+        SetChildAlongAxis(child, axis, cell.GetOffset(axis), cell.GetSize(axis));
     }
 }

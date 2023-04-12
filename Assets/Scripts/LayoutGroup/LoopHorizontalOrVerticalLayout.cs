@@ -1,24 +1,22 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public abstract class LoopHorizontalOrVerticalLayout : HorizontalOrVerticalLayoutGroup,ILoopLayout
+public abstract class LoopHorizontalOrVerticalLayout : HorizontalOrVerticalLayoutGroup, ILoopLayout
 {
-    private List<BaseLoopModel> _loopModels;
-
     private ContentSizeFitter _contentSizeFitter;
 
     private ContentSizeFitter contentSizeFitter =>
-        _contentSizeFitter ?? (_contentSizeFitter = GetComponent<ContentSizeFitter>()); 
+        _contentSizeFitter ? _contentSizeFitter : (_contentSizeFitter = GetComponent<ContentSizeFitter>());
 
-    public List<BaseLoopModel> LoopModels
+    private LoopScrollSource _source;
+
+    public LoopScrollSource Source
     {
-        get => _loopModels;
+        get => _source;
         set
         {
-            _loopModels = value;
+            _source = value;
             SetDirty();
         }
     }
@@ -26,6 +24,7 @@ public abstract class LoopHorizontalOrVerticalLayout : HorizontalOrVerticalLayou
     public LoopObjectPool ObjectPool { get; set; }
 
     private Action _onLayoutCalculateCompleteEvent;
+
     public void AddCalculateCompleteEvent(Action action)
     {
         _onLayoutCalculateCompleteEvent = action;
@@ -40,20 +39,30 @@ public abstract class LoopHorizontalOrVerticalLayout : HorizontalOrVerticalLayou
         contentSizeFitter.enabled = false;
         _onLayoutCalculateCompleteEvent?.Invoke();
     }
-    
-    protected override void OnTransformChildrenChanged() { }
-    
-    protected override void OnDidApplyAnimationProperties() { }
-    
-    protected override void OnRectTransformDimensionsChange() { }
 
-    protected override void OnEnable() { }
+    protected override void OnTransformChildrenChanged()
+    {
+    }
 
-    protected override void OnDisable() { }
-    
+    protected override void OnDidApplyAnimationProperties()
+    {
+    }
+
+    protected override void OnRectTransformDimensionsChange()
+    {
+    }
+
+    protected override void OnEnable()
+    {
+    }
+
+    protected override void OnDisable()
+    {
+    }
+
     protected new void CalcAlongAxis(int axis, bool isVertical)
     {
-        if (ObjectPool==null || _loopModels == null)
+        if (ObjectPool == null || _source == null)
         {
             return;
         }
@@ -67,13 +76,14 @@ public abstract class LoopHorizontalOrVerticalLayout : HorizontalOrVerticalLayou
         float totalFlexible = 0;
 
         bool alongOtherAxis = (isVertical ^ (axis == 1));
-        for (int i = 0; i < _loopModels.Count; i++)
+        for (int i = 0; i < _source.Count; i++)
         {
-            var go = ObjectPool.GetObject(_loopModels[i].CellType);
-            LoopCalUtil.RefreshViewAndRebuild(axis,go,_loopModels[i]);
+            var go = ObjectPool.GetObject(_source[i].GetTmpl());
+            LoopCalUtil.RefreshViewAndRebuild(axis, go, _source[i]);
 
             float min, preferred, flexible;
-            LoopCalUtil.GetChildSizes(go.transform as RectTransform, axis, controlSize, childForceExpandSize, out min, out preferred, out flexible);
+            LoopCalUtil.GetChildSizes(go.transform as RectTransform, axis, controlSize, childForceExpandSize, out min,
+                out preferred, out flexible);
 
             if (alongOtherAxis)
             {
@@ -89,6 +99,7 @@ public abstract class LoopHorizontalOrVerticalLayout : HorizontalOrVerticalLayou
                 // Increment flexible size with element's flexible size.
                 totalFlexible += flexible;
             }
+
             ObjectPool.ReturnObject(go);
         }
 
@@ -104,7 +115,7 @@ public abstract class LoopHorizontalOrVerticalLayout : HorizontalOrVerticalLayou
 
     protected new void SetChildrenAlongAxis(int axis, bool isVertical)
     {
-        if (ObjectPool == null || _loopModels == null)
+        if (ObjectPool == null || _source == null)
         {
             return;
         }
@@ -118,25 +129,27 @@ public abstract class LoopHorizontalOrVerticalLayout : HorizontalOrVerticalLayou
         if (alongOtherAxis)
         {
             float innerSize = size - (axis == 0 ? padding.horizontal : padding.vertical);
-            for (int i = 0; i < _loopModels.Count; i++)
+            for (int i = 0; i < _source.Count; i++)
             {
-                var go = ObjectPool.GetObject(_loopModels[i].CellType);
+                var go = ObjectPool.GetObject(_source[i].GetTmpl());
                 var child = go.transform as RectTransform;
                 float min, preferred, flexible;
-                LoopCalUtil.RefreshViewAndRebuild(axis,go,_loopModels[i]);
-                LoopCalUtil.GetChildSizes(child,axis, controlSize, childForceExpandSize, out min, out preferred, out flexible);
+                LoopCalUtil.RefreshViewAndRebuild(axis, go, _source[i]);
+                LoopCalUtil.GetChildSizes(child, axis, controlSize, childForceExpandSize, out min, out preferred,
+                    out flexible);
 
                 float requiredSpace = Mathf.Clamp(innerSize, min, flexible > 0 ? size : preferred);
                 float startOffset = GetStartOffset(axis, requiredSpace);
                 if (controlSize)
                 {
-                    _loopModels[i].RefreshCellSizeData(axis, startOffset, requiredSpace);
+                    _source[i].RefreshCellSizeData(axis, startOffset, requiredSpace);
                 }
                 else
                 {
                     float offsetInCell = (requiredSpace - child.sizeDelta[axis]) * alignmentOnAxis;
-                    _loopModels[i].RefreshCellSizeData(axis, startOffset + offsetInCell, child.sizeDelta[axis]);
+                    _source[i].RefreshCellSizeData(axis, startOffset + offsetInCell, child.sizeDelta[axis]);
                 }
+
                 ObjectPool.ReturnObject(go);
             }
         }
@@ -159,37 +172,35 @@ public abstract class LoopHorizontalOrVerticalLayout : HorizontalOrVerticalLayou
                     itemFlexibleMultiplier = (size - GetTotalPreferredSize(axis)) / GetTotalFlexibleSize(axis);
             }
 
-            for (int i = 0; i < _loopModels.Count; i++)
+            for (int i = 0; i < _source.Count; i++)
             {
-                var go = ObjectPool.GetObject(_loopModels[i].CellType);
+                var go = ObjectPool.GetObject( _source[i].GetTmpl());
                 var child = go.transform as RectTransform;
                 float min, preferred, flexible;
-                LoopCalUtil.RefreshViewAndRebuild(axis,go,_loopModels[i]);
-                LoopCalUtil.GetChildSizes(child,axis, controlSize, childForceExpandSize, out min, out preferred, out flexible);
+                LoopCalUtil.RefreshViewAndRebuild(axis, go, _source[i]);
+                LoopCalUtil.GetChildSizes(child, axis, controlSize, childForceExpandSize, out min, out preferred,
+                    out flexible);
 
                 float childSize = Mathf.Lerp(min, preferred, minMaxLerp);
                 childSize += flexible * itemFlexibleMultiplier;
                 if (controlSize)
                 {
-
-                    _loopModels[i].RefreshCellSizeData(axis,pos,childSize);
+                    _source[i].RefreshCellSizeData(axis, pos, childSize);
                 }
                 else
                 {
                     float offsetInCell = (childSize - child.sizeDelta[axis]) * alignmentOnAxis;
-                    _loopModels[i].RefreshCellSizeData(axis, pos + offsetInCell, child.sizeDelta[axis]);
-                    
+                    _source[i].RefreshCellSizeData(axis, pos + offsetInCell, child.sizeDelta[axis]);
                 }
 
                 pos += childSize + spacing;
-                ObjectPool.ReturnObject(go);
+                ObjectPool.ReturnObject( go);
             }
         }
-
     }
 
-    public void SetChildAlongAxis(RectTransform child,BaseLoopModel model,int axis)
+    public void SetChildAlongAxis(RectTransform child, LoopCell cell, int axis)
     {
-        SetChildAlongAxis(child, axis, model.GetOffset(axis),model.GetSize(axis));
+        SetChildAlongAxis(child, axis, cell.GetOffset(axis), cell.GetSize(axis));
     }
 }
